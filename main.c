@@ -10,6 +10,8 @@ int main(int argc, char *argv[]) {
 //    if (argc < 2)
 //        return -1;
 
+    const int TOP = 10;
+
     char *pathToFile = "log.txt";
 
     const char *cat[] = {"cat", pathToFile, 0};
@@ -54,20 +56,33 @@ int main(int argc, char *argv[]) {
 
         //-----calculating percentage
         int j = 0;
-        int numbers[10];
+        int numbers[TOP];
+        char referers[TOP][1024];
         int k = 0;
-        printf(result);
         while (result[j] != NULL) {
             j++;
             i = 0;
-            char num[10];
+            char num[TOP];
             while(result[j] != ' ') {
 
                 num[i++] = result[j++];
             }
             num[i] = '\n';
-            numbers[k++] = (int) strtol(num, (char **)NULL, 10);
+            numbers[k] = (int) strtol(num, (char **)NULL, 10);
+            int l=0;
+            while(result[j] != '\n'){
+                    referers[k][l++]=result[j++];
+            }
+            referers[k][l] = NULL;
+            k++;
             while (result[j++] != '\n');
+        }
+        int sum = 0;
+        for (int l = 0; l < TOP; ++l) {
+                sum+=numbers[l];
+        }
+        for (int m = 0; m < TOP; ++m) {
+            printf("%s - %d - %f\%\n", referers[m], numbers[m], (double)numbers[m]*100/sum);
         }
     }
 
