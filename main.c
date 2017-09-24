@@ -5,12 +5,12 @@
 #include <wait.h>
 #include "command.c"
 
-// cat log.txt | grep 18/Oct/2006 | cut -d \" -f4 | grep -v -x "-" | sort | uniq -c | sort -nrk 1 | head -10
+// cat log.txt | grep 18/Oct/2006 | cut -d \" -f4 | grep -v -x "-" | sort | uniq -c | sort -nrk 1 | head -10 | tr -s " "
 int main(int argc, char *argv[]) {
 //    if (argc < 2)
 //        return -1;
 
-    char* pathToFile = "log.txt";
+    char *pathToFile = "log.txt";
 
     const char *cat[] = {"cat", pathToFile, 0};
     const char *grep1[] = {"grep", "18/Oct/2006", 0};
@@ -20,24 +20,33 @@ int main(int argc, char *argv[]) {
     const char *uniq[] = {"uniq", "-c", 0};
     const char *sort2[] = {"sort", "-nrk", "1", 0};
     const char *head[] = {"head", "-10", 0};
+    const char *tr[] = {"tr", "-s", "' '", 0};
 
-    struct command cmd[] = { {cat}, {grep1}, {cut}, {grep2}, {sort1}, {uniq}, {sort2}, {head} };
+    struct command cmd[] = {{cat},
+                            {grep1},
+                            {cut},
+                            {grep2},
+                            {sort1},
+                            {uniq},
+                            {sort2},
+                            {head},
+                            {tr}};
 
-    int fd[2];
+    int fd[2], fd1[2];
     pipe(fd);
-
-    pid_t pid1 = fork_pipes(8, cmd, fd[1]);
-    waitpid(pid1, NULL, 0);
+    pipe(fd1);
 
     pid_t pid = fork();
-
     if (!pid) {
-        char result[1024];
-        read(fd[0], result, 1024);
-        printf(result);
+        fork_pipes(9, cmd);
     }
 
+
+    close(fd[0]);
+    close(fd[1]);
+
     waitpid(pid, NULL, 0);
+
     return 0;
 }
 
@@ -54,12 +63,12 @@ int spawn_proc(int in, int out, struct command *cmd) {
             close(out);
         }
 
-        return execvp(cmd->argv[0], (char * const *)cmd->argv);
+        return execvp(cmd->argv[0], (char *const *) cmd->argv);
     }
     return pid;
 }
 
-int fork_pipes(int n, struct command *cmd, int out) {
+int fork_pipes(int n, struct command *cmd) {
     int i;
     pid_t pid;
     int in, fd[2];
@@ -76,17 +85,8 @@ int fork_pipes(int n, struct command *cmd, int out) {
         in = fd[0];
     }
 
-    pid = fork();
+    if (in != 0)
+        dup2(in, 0);
 
-    if (!pid) {
-        if (in != 0)
-            dup2(in, 0);
-        if (out != 1) {
-            dup2(out, 1);
-            close(out);
-        }
-        execvp(cmd[i].argv[0], (char * const *)cmd[i].argv);
-    }
-
-    return pid;
+    return execvp (cmd [i].argv [0], (char * const *)cmd [i].argv);
 }
